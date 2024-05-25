@@ -1,0 +1,27 @@
+# Ignore node_modules directory
+node_modules/
+
+# Ignore build output directories
+dist/
+
+# Ignore environment files
+.env
+
+# Ignore logs
+logs
+*.log
+npm-debug.log*
+
+# Ignore compiled TypeScript files
+*.tsbuildinfo
+
+# Ignore operating system specific files
+.DS_Store
+Thumbs.db
+
+# Ignore the Git configuration file
+.gitconfig
+
+# Ignore package lock files
+package-lock.json
+yarn.lock
