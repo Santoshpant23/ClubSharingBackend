@@ -23,20 +23,28 @@ const adminEmail = process.env.adminEmail;
 const adminPass = process.env.adminPassword;
 const adminVerify = express_1.default.Router();
 adminVerify.post('/login', (req, res) => {
-    const token = req.body.token;
-    const data = jsonwebtoken_1.default.verify(token, SECRET_KEY);
-    const email = data.email;
-    const pass = data.password;
-    if (email != adminEmail || pass != adminPass) {
-        res.json({
-            "success": false,
-            "message": "Unauthorized Access"
-        });
+    try {
+        const token = req.body.token;
+        const data = jsonwebtoken_1.default.verify(token, SECRET_KEY);
+        const email = data.email;
+        const pass = data.password;
+        if (email != adminEmail || pass != adminPass) {
+            res.json({
+                "success": false,
+                "message": "Unauthorized Access"
+            });
+        }
+        else {
+            res.json({
+                "success": true,
+                "message": "Welcome Admin"
+            });
+        }
     }
-    else {
-        res.status(200).json({
-            "success": true,
-            "message": "Welcome Admin"
+    catch (e) {
+        return res.json({
+            "success": false,
+            "message": "Something went wrong"
         });
     }
 });
@@ -57,40 +65,41 @@ adminVerify.post('/getallpendingusers', (req, res) => __awaiter(void 0, void 0, 
     }
 }));
 adminVerify.post('/approved', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, clubname, password, token, personname, positionOfPerson } = req.body;
-    const data = jsonwebtoken_1.default.verify(token, SECRET_KEY);
-    if (data.email != adminEmail || data.password != adminPass) {
-        return res.status(401).json({
-            "success": false,
-            "message": "Unauthorized Access"
-        });
-    }
     try {
-        const put = new schemas_1.SchemaForClub({ name: clubname, email: email, password: password, description: "", contactEmail: email, personWhoCreated: personname, positionOfPersonWhoCreated: positionOfPerson });
-        put.save();
-        yield schemas_1.SchemaForRegister.deleteOne({ email: email });
-    }
-    catch (e) {
-        return res.json({
-            "success": false,
-            "message": "Internal Server Error"
-        });
-    }
-    try {
-        const transporter = yield nodemailer_1.default.createTransport({
-            service: 'gmail',
-            secure: false,
-            auth: {
-                user: process.env.email,
-                pass: process.env.password
-            }
-        });
-        const mailConfigurations = {
-            from: process.env.email,
-            to: email,
-            subject: 'Welcome to ClubSharing',
-            // This would be the text of email body 
-            html: `
+        const { email, clubname, password, token, personname, positionOfPerson } = req.body;
+        const data = jsonwebtoken_1.default.verify(token, SECRET_KEY);
+        if (data.email != adminEmail || data.password != adminPass) {
+            return res.json({
+                "success": false,
+                "message": "Unauthorized Access"
+            });
+        }
+        try {
+            const put = new schemas_1.SchemaForClub({ name: clubname, email: email, password: password, description: "", contactEmail: email, personWhoCreated: personname, positionOfPersonWhoCreated: positionOfPerson });
+            put.save();
+            yield schemas_1.SchemaForRegister.deleteOne({ email: email });
+        }
+        catch (e) {
+            return res.json({
+                "success": false,
+                "message": "Internal Server Error"
+            });
+        }
+        try {
+            const transporter = yield nodemailer_1.default.createTransport({
+                service: 'gmail',
+                secure: false,
+                auth: {
+                    user: process.env.email,
+                    pass: process.env.password
+                }
+            });
+            const mailConfigurations = {
+                from: process.env.email,
+                to: email,
+                subject: 'Welcome to ClubSharing',
+                // This would be the text of email body 
+                html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -161,52 +170,60 @@ adminVerify.post('/approved', (req, res) => __awaiter(void 0, void 0, void 0, fu
 </body>
 </html>
 `
-        };
-        yield transporter.sendMail(mailConfigurations, function (error, info) {
-            if (error)
-                throw error;
-            console.log(info);
+            };
+            yield transporter.sendMail(mailConfigurations, function (error, info) {
+                if (error)
+                    throw error;
+                console.log(info);
+            });
+        }
+        catch (e) {
+            return res.json({
+                "success": false,
+                "message": "Something is wrong"
+            });
+        }
+        console.log('Finally all good');
+        return res.json({
+            "success": true,
+            "message": "Success"
         });
     }
     catch (e) {
         return res.json({
             "success": false,
-            "message": "Something is wrong"
+            "message": "Something went wrong"
         });
     }
-    console.log('Finally all good');
-    return res.json({
-        "success": true,
-        "message": "Success"
-    });
 }));
 adminVerify.post('/denied', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, token } = req.body;
-    const data = jsonwebtoken_1.default.verify(token, SECRET_KEY);
-    const emailofAdminSir = data.email;
-    const passofAdmin = data.password;
-    if (emailofAdminSir != adminEmail || passofAdmin != adminPass) {
-        return res.json({
-            "success": false,
-            "message": "Unauthorized Access"
-        });
-    }
-    const transporter = yield nodemailer_1.default.createTransport({
-        service: 'gmail',
-        secure: false,
-        auth: {
-            user: process.env.email,
-            pass: process.env.password
+    try {
+        const { email, token } = req.body;
+        const data = jsonwebtoken_1.default.verify(token, SECRET_KEY);
+        const emailofAdminSir = data.email;
+        const passofAdmin = data.password;
+        if (emailofAdminSir != adminEmail || passofAdmin != adminPass) {
+            return res.json({
+                "success": false,
+                "message": "Unauthorized Access"
+            });
         }
-    });
-    const mailConfigurations = {
-        // It should be a string of sender/server email 
-        from: process.env.email,
-        to: email,
-        // Subject of Email 
-        subject: 'Request Denied',
-        // This would be the text of email body 
-        html: `
+        const transporter = yield nodemailer_1.default.createTransport({
+            service: 'gmail',
+            secure: false,
+            auth: {
+                user: process.env.email,
+                pass: process.env.password
+            }
+        });
+        const mailConfigurations = {
+            // It should be a string of sender/server email 
+            from: process.env.email,
+            to: email,
+            // Subject of Email 
+            subject: 'Request Denied',
+            // This would be the text of email body 
+            html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -271,25 +288,32 @@ adminVerify.post('/denied', (req, res) => __awaiter(void 0, void 0, void 0, func
         </body>
         </html>
         `
-    };
-    yield transporter.sendMail(mailConfigurations, function (error, info) {
-        if (error)
-            throw error;
-        console.log('Email Sent Successfully');
-        console.log(info);
-    });
-    try {
-        yield schemas_1.SchemaForRegister.deleteOne({ email: email });
+        };
+        yield transporter.sendMail(mailConfigurations, function (error, info) {
+            if (error)
+                throw error;
+            console.log('Email Sent Successfully');
+            console.log(info);
+        });
+        try {
+            yield schemas_1.SchemaForRegister.deleteOne({ email: email });
+        }
+        catch (e) {
+            return res.json({
+                "success": false,
+                "message": "Internal Server Error"
+            });
+        }
+        return res.json({
+            "success": true,
+            "message": "Success"
+        });
     }
     catch (e) {
         return res.json({
             "success": false,
-            "message": "Internal Server Error"
+            "message": "Something went wrong"
         });
     }
-    return res.json({
-        "success": true,
-        "message": "Success"
-    });
 }));
 exports.default = adminVerify;

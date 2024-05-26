@@ -22,6 +22,9 @@ const registerVerify = zod.object({
     });
 
     const sendtoEmail = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+      try{
+
+      
         const email = req.body.email;
         const checkEmail = await SchemaForClub.findOne({email:email});
         if(checkEmail){
@@ -128,11 +131,20 @@ const registerVerify = zod.object({
                 "message": e.message
             })
         }
+      }catch(e){
+        res.json({
+          "success": false,
+          "message": "Something went wrong"
+        })
+      }
         
     }
 
 
     async function verifyEmail(req:express.Request, res: express.Response, next: express.NextFunction){
+      try{
+
+      
         const email = req.body.email;
         const otp = req.body.otp;                          
         const findIt = await SchemaForOtp.findOne({email: email, otp: otp});
@@ -140,11 +152,17 @@ const registerVerify = zod.object({
         if(findIt){
             next();
         } else {
-            res.json({
+           return res.json({
               "success": false,
             "message": "Invalid Otp, try again"
         })
     }
+  }catch(e){
+    return res.json({
+      "success": false,
+      "message": "Something went wrong"
+    })
+  }
     }
 
 
@@ -157,6 +175,9 @@ registerRouter.post('/info', sendtoEmail,   async (req, res) => {
 });
 
 registerRouter.post('/verify', verifyEmail,   async (req, res) => {
+  try{
+
+  
     const {email, clubname, password, personname, position} = req.body;
     const hasedPass = await bcrypt.hash(password, saltRounds) 
     console.log(email + " something "+ password + " something "+ clubname+" something "+ personname+ " something "+ position);
@@ -181,5 +202,11 @@ registerRouter.post('/verify', verifyEmail,   async (req, res) => {
         "success": true,
        "message" : "Otp verified successfully"
     });
+  } catch(e){
+    return res.json({
+      "success": false,
+      "message": "Something went wrong"
+    })
+  }
 });
 export default registerRouter;

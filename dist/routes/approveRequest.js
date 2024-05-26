@@ -66,6 +66,10 @@ approveRequest.get('/iteminfo', (req, res) => __awaiter(void 0, void 0, void 0, 
         });
     }
     catch (e) {
+        return res.json({
+            "success": false,
+            "message": "Something went wrong"
+        });
     }
 }));
 approveRequest.post("/getallpendingrequests", (req, res) => __awaiter(void 0, void 0, void 0, function* () {

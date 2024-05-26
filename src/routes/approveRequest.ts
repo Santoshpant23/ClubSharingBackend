@@ -62,7 +62,10 @@ approveRequest.get('/iteminfo', async (req, res)=>{
     })
 
   }catch(e){
-
+    return res.json({
+      "success": false,
+      "message": "Something went wrong"
+    })
   }
 
 })

@@ -26,37 +26,45 @@ const adminPass = process.env.adminPassword;
 const userRouter = express_1.default.Router();
 userRouter.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const email = req.body.email;
-    const password = req.body.password;
-    if (email == adminEmail && password == adminPass) {
-        const token = jsonwebtoken_1.default.sign({ email, password }, SECRET_KEY);
-        return res.json({
-            token: token,
-            "message": "Success, Welcome Admin",
+    try {
+        const email = req.body.email;
+        const password = req.body.password;
+        if (email == adminEmail && password == adminPass) {
+            const token = jsonwebtoken_1.default.sign({ email, password }, SECRET_KEY);
+            return res.json({
+                token: token,
+                "message": "Success, Welcome Admin",
+                "success": true
+            });
+        }
+        const user = yield schemas_1.SchemaForClub.findOne({ email: email });
+        if (!user || !user.password) {
+            return res.json({
+                "success": false,
+                "msg": "User Not Found"
+            });
+        }
+        const comp = yield bcrypt_1.default.compare(password, (_a = user === null || user === void 0 ? void 0 : user.password) !== null && _a !== void 0 ? _a : "");
+        if (!comp) {
+            return res.json({
+                "message": "User Does Not Exist, Please Register",
+                "success": false
+            });
+        }
+        //will send jwt
+        const tokenSign = jsonwebtoken_1.default.sign({ email, password }, SECRET_KEY);
+        return res.status(200).json({
+            "token": tokenSign,
+            "message": "Successfully logged in",
             "success": true
         });
     }
-    const user = yield schemas_1.SchemaForClub.findOne({ email: email });
-    if (!user || !user.password) {
+    catch (e) {
         return res.json({
             "success": false,
-            "msg": "User Not Found"
+            "message": "Something went wrong"
         });
     }
-    const comp = yield bcrypt_1.default.compare(password, (_a = user === null || user === void 0 ? void 0 : user.password) !== null && _a !== void 0 ? _a : "");
-    if (!comp) {
-        return res.json({
-            "message": "User Does Not Exist, Please Register",
-            "success": false
-        });
-    }
-    //will send jwt
-    const tokenSign = jsonwebtoken_1.default.sign({ email, password }, SECRET_KEY);
-    return res.status(200).json({
-        "token": tokenSign,
-        "message": "Successfully logged in",
-        "success": true
-    });
 }));
 userRouter.get('/getitem', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.headers.id;
@@ -76,25 +84,33 @@ userRouter.get('/getitem', (req, res) => __awaiter(void 0, void 0, void 0, funct
 }));
 userRouter.get('/profile', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const token = req.headers.token;
-    const data = yield jsonwebtoken_1.default.verify(token, SECRET_KEY);
-    if (!data) {
-        return res.json({
-            "success": false,
-            "message": "Unauthorized Access"
-        });
-    }
     try {
-        const clubDetails = yield schemas_1.SchemaForClub.findOne({ email: data.email });
-        console.log("Found clubDetais");
-        res.json({
-            "success": true,
-            clubDetails
-        });
+        const data = yield jsonwebtoken_1.default.verify(token, SECRET_KEY);
+        if (!data) {
+            return res.json({
+                "success": false,
+                "message": "Unauthorized Access"
+            });
+        }
+        try {
+            const clubDetails = yield schemas_1.SchemaForClub.findOne({ email: data.email });
+            console.log("Found clubDetais");
+            res.json({
+                "success": true,
+                clubDetails
+            });
+        }
+        catch (e) {
+            return res.json({
+                "success": false,
+                "message": "something went wrong in database"
+            });
+        }
     }
     catch (e) {
         return res.json({
             "success": false,
-            "message": "something went wrong in database"
+            "message": "Something went wrong"
         });
     }
 }));
@@ -157,7 +173,7 @@ userRouter.post('/additem', (req, res) => __awaiter(void 0, void 0, void 0, func
         // Find club by email
         const userData = yield schemas_1.SchemaForClub.findOne({ email: email });
         if (!userData) {
-            return res.status(404).json({ message: "Club not found" });
+            return res.json({ message: "Club not found" });
         }
         console.log("Club found with this jwt");
         const passFromUser = (_b = userData.password) !== null && _b !== void 0 ? _b : "";
@@ -210,7 +226,7 @@ userRouter.post('/deleteItem', (req, res) => __awaiter(void 0, void 0, void 0, f
         // Find the club by email
         const userData = yield schemas_1.SchemaForClub.findOne({ email: email });
         if (!userData) {
-            return res.status(404).json({
+            return res.json({
                 "success": false,
                 "message": "Club not found"
             });
@@ -218,7 +234,7 @@ userRouter.post('/deleteItem', (req, res) => __awaiter(void 0, void 0, void 0, f
         const passFromUser = (_c = userData.password) !== null && _c !== void 0 ? _c : "";
         const comp = yield bcrypt_1.default.compare(pass, passFromUser);
         if (!comp) {
-            return res.status(401).json({
+            return res.json({
                 "success": false,
                 "message": "Unauthorized Access"
             });
@@ -245,7 +261,7 @@ userRouter.post('/deleteItem', (req, res) => __awaiter(void 0, void 0, void 0, f
         });
     }
     catch (error) {
-        res.status(500).json({
+        res.json({
             "success": false,
             "message": "Error deleting item"
         });

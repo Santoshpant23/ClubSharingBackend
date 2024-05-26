@@ -14,6 +14,9 @@ const adminPass = process.env.adminPassword;
 const userRouter = express.Router();
 
 userRouter.post('/login', async (req, res)=>{
+  try{
+
+  
     const email = req.body.email;
     const password = req.body.password;
     if(email==adminEmail && password==adminPass){
@@ -51,6 +54,13 @@ userRouter.post('/login', async (req, res)=>{
         "success": true
     })
 
+  }catch(e){
+    return res.json({
+      "success": false,
+      "message": "Something went wrong"
+    })
+  }
+
 });
 
 
@@ -74,6 +84,8 @@ userRouter.get('/getitem', async (req, res)=>{
 userRouter.get('/profile', async (req, res)=>{
   const token  = req.headers.token as string;
   
+  try{
+
   
   const data = await jwt.verify(token, SECRET_KEY) as { email: string, password: string };
   if(!data){
@@ -100,7 +112,13 @@ userRouter.get('/profile', async (req, res)=>{
     "success":false,
     "message": "something went wrong in database"
   })
-}
+} 
+  }catch(e){
+    return res.json({
+      "success": false,
+      "message": "Something went wrong"
+    })
+  }
 
 })
 
@@ -178,7 +196,7 @@ userRouter.post('/additem', async (req, res) => {
       // Find club by email
       const userData = await SchemaForClub.findOne({ email: email });
       if (!userData) {
-        return res.status(404).json({ message: "Club not found" });
+        return res.json({ message: "Club not found" });
       }
       console.log("Club found with this jwt");
       
@@ -236,7 +254,7 @@ userRouter.post('/additem', async (req, res) => {
       // Find the club by email
       const userData = await SchemaForClub.findOne({ email: email });
       if (!userData) {
-        return res.status(404).json({
+        return res.json({
           "success":false,
            "message": "Club not found" });
       }
@@ -244,7 +262,7 @@ userRouter.post('/additem', async (req, res) => {
       const passFromUser = userData.password ?? "";
       const comp = await bcrypt.compare(pass, passFromUser);
       if (!comp) {
-        return res.status(401).json({
+        return res.json({
           "success": false,
           "message": "Unauthorized Access" });
       }
@@ -273,7 +291,7 @@ userRouter.post('/additem', async (req, res) => {
         "success": true,
         "message": "Item deleted successfully" });
     } catch (error) {
-      res.status(500).json({
+      res.json({
         "success":false,
         "message": "Error deleting item" });
     }

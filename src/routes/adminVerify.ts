@@ -14,6 +14,9 @@ const adminPass = process.env.adminPassword;
 const adminVerify = express.Router();
 
 adminVerify.post('/login', (req, res)=>{
+  try{
+
+ 
 const token = req.body.token;
 const data = jwt.verify(token, SECRET_KEY) as { email: string, password: string };
     const email = data.email;
@@ -24,11 +27,17 @@ const data = jwt.verify(token, SECRET_KEY) as { email: string, password: string 
             "message": "Unauthorized Access"
         })
     } else{
-        res.status(200).json({
+        res.json({
             "success": true,
             "message": "Welcome Admin"
         }) 
     }
+  }catch(e){
+    return res.json({
+      "success": false,
+      "message": "Something went wrong"
+    })
+  }
 })
 
 adminVerify.post('/getallpendingusers', async (req, res) => {
@@ -49,11 +58,14 @@ adminVerify.post('/getallpendingusers', async (req, res) => {
 });
 
 adminVerify.post('/approved', async (req, res)=>{
+  try{
+
+  
     const {email, clubname, password, token, personname, positionOfPerson} = req.body;
     const data = jwt.verify(token, SECRET_KEY) as { email: string, password: string };
     
     if(data.email!=adminEmail || data.password!=adminPass){
-      return   res.status(401).json({
+      return   res.json({
             "success": false,
             "message": "Unauthorized Access"
         })
@@ -187,10 +199,19 @@ adminVerify.post('/approved', async (req, res)=>{
     "success": true,
         "message": "Success"
     })
+  } catch(e){
+    return res.json({
+      "success": false,
+      "message": "Something went wrong"
+    })
+  }
 
 })
 
 adminVerify.post('/denied', async (req, res)=>{
+  try{
+
+  
     const {email, token} = req.body;
     const data = jwt.verify(token, SECRET_KEY) as { email: string, password: string };
     const emailofAdminSir = data.email;
@@ -309,6 +330,12 @@ adminVerify.post('/denied', async (req, res)=>{
     "success": true,
         "message": "Success"
     })
+  }catch(e){
+    return res.json({
+      "success": false,
+      "message": "Something went wrong"
+    })
+  }
 })
 
 export default adminVerify;

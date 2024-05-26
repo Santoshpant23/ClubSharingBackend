@@ -31,30 +31,31 @@ const registerVerify = zod_1.default.object({
     positionOfPerson: zod_1.default.string()
 });
 const sendtoEmail = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const email = req.body.email;
-    const checkEmail = yield schemas_1.SchemaForClub.findOne({ email: email });
-    if (checkEmail) {
-        return res.json({
-            "success": false,
-            "message": "User Already Exists"
-        });
-    }
-    const transporter = yield nodemailer_1.default.createTransport({
-        service: 'gmail',
-        secure: false,
-        auth: {
-            user: process.env.email,
-            pass: process.env.password
+    try {
+        const email = req.body.email;
+        const checkEmail = yield schemas_1.SchemaForClub.findOne({ email: email });
+        if (checkEmail) {
+            return res.json({
+                "success": false,
+                "message": "User Already Exists"
+            });
         }
-    });
-    const otp = otp_generator_1.default.generate(6, { upperCaseAlphabets: false, specialChars: false });
-    const mailConfigurations = {
-        from: process.env.email,
-        to: email,
-        // Subject of Email 
-        subject: 'Email Verification',
-        // This would be the text of email body 
-        html: `
+        const transporter = yield nodemailer_1.default.createTransport({
+            service: 'gmail',
+            secure: false,
+            auth: {
+                user: process.env.email,
+                pass: process.env.password
+            }
+        });
+        const otp = otp_generator_1.default.generate(6, { upperCaseAlphabets: false, specialChars: false });
+        const mailConfigurations = {
+            from: process.env.email,
+            to: email,
+            // Subject of Email 
+            subject: 'Email Verification',
+            // This would be the text of email body 
+            html: `
             <!DOCTYPE html>
             <html>
             <head>
@@ -113,36 +114,51 @@ const sendtoEmail = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
             </body>
             </html>
             `
-    };
-    yield transporter.sendMail(mailConfigurations, function (error, info) {
-        if (error)
-            throw error;
-        console.log('Email Sent Successfully');
-    });
-    try {
-        const put = new schemas_1.SchemaForOtp({ email: email, otp: otp });
-        put.save();
-        next();
+        };
+        yield transporter.sendMail(mailConfigurations, function (error, info) {
+            if (error)
+                throw error;
+            console.log('Email Sent Successfully');
+        });
+        try {
+            const put = new schemas_1.SchemaForOtp({ email: email, otp: otp });
+            put.save();
+            next();
+        }
+        catch (e) {
+            res.json({
+                "success": false,
+                "message": e.message
+            });
+        }
     }
     catch (e) {
         res.json({
             "success": false,
-            "message": e.message
+            "message": "Something went wrong"
         });
     }
 });
 function verifyEmail(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
-        const email = req.body.email;
-        const otp = req.body.otp;
-        const findIt = yield schemas_1.SchemaForOtp.findOne({ email: email, otp: otp });
-        if (findIt) {
-            next();
+        try {
+            const email = req.body.email;
+            const otp = req.body.otp;
+            const findIt = yield schemas_1.SchemaForOtp.findOne({ email: email, otp: otp });
+            if (findIt) {
+                next();
+            }
+            else {
+                return res.json({
+                    "success": false,
+                    "message": "Invalid Otp, try again"
+                });
+            }
         }
-        else {
-            res.json({
+        catch (e) {
+            return res.json({
                 "success": false,
-                "message": "Invalid Otp, try again"
+                "message": "Something went wrong"
             });
         }
     });
@@ -154,26 +170,34 @@ registerRouter.post('/info', sendtoEmail, (req, res) => __awaiter(void 0, void 0
     });
 }));
 registerRouter.post('/verify', verifyEmail, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, clubname, password, personname, position } = req.body;
-    const hasedPass = yield bcrypt_1.default.hash(password, saltRounds);
-    console.log(email + " something " + password + " something " + clubname + " something " + personname + " something " + position);
-    const verify = registerVerify.safeParse({ email: email, password: hasedPass, clubname: clubname, personname: personname, positionOfPerson: position });
-    if (!verify.success) {
-        return res.json({ "success": false, "message": "Give all Info Correctly" });
-    }
     try {
-        const put = new schemas_1.SchemaForRegister({ email: req.body.email, clubname: req.body.clubname, password: hasedPass, personname: req.body.personname, positionOfPerson: req.body.position });
-        put.save();
+        const { email, clubname, password, personname, position } = req.body;
+        const hasedPass = yield bcrypt_1.default.hash(password, saltRounds);
+        console.log(email + " something " + password + " something " + clubname + " something " + personname + " something " + position);
+        const verify = registerVerify.safeParse({ email: email, password: hasedPass, clubname: clubname, personname: personname, positionOfPerson: position });
+        if (!verify.success) {
+            return res.json({ "success": false, "message": "Give all Info Correctly" });
+        }
+        try {
+            const put = new schemas_1.SchemaForRegister({ email: req.body.email, clubname: req.body.clubname, password: hasedPass, personname: req.body.personname, positionOfPerson: req.body.position });
+            put.save();
+        }
+        catch (e) {
+            return res.json({
+                "success": false,
+                "message": "Server Error"
+            });
+        }
+        res.json({
+            "success": true,
+            "message": "Otp verified successfully"
+        });
     }
     catch (e) {
         return res.json({
             "success": false,
-            "message": "Server Error"
+            "message": "Something went wrong"
         });
     }
-    res.json({
-        "success": true,
-        "message": "Otp verified successfully"
-    });
 }));
 exports.default = registerRouter;
